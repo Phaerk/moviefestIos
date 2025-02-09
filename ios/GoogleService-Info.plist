@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>283376106620-9qpk8c8aqgb6ml3asbu6v41pj1212lgm.apps.googleusercontent.com,283376106620-nb7o1tv71mpionn6ook9cqjm8pf2snqs.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.283376106620-9qpk8c8aqgb6ml3asbu6v41pj1212lgm</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>283376106620-8fldvdbosul52l6ummo5uof7c5lasslp.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCYZNigWvj79jSI4lYWJe_pt3zScwLafx0</string>
+	<key>GCM_SENDER_ID</key>
+	<string>283376106620</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>org.reactjs.native.example.newmovie</string>
+	<key>PROJECT_ID</key>
+	<string>movie-3f380</string>
+	<key>STORAGE_BUCKET</key>
+	<string>movie-3f380.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false/>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false/>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true/>
+	<key>IS_GCM_ENABLED</key>
+	<true/>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true/>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:283376106620:ios:9523b7c3e7a72b30869df9</string>
+</dict>
+</plist>
