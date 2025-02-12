@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView,Keyboard } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import auth from '@react-native-firebase/auth';
 import { Modal, Paragraph, Button, Portal, PaperProvider, MD2DarkTheme } from 'react-native-paper';
@@ -7,6 +7,8 @@ import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 
 import styles from './style';
 import LottieView from 'lottie-react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+
 
 const ChangePassword = () => {
     const navigation = useNavigation();
@@ -73,6 +75,11 @@ const ChangePassword = () => {
 
     return (
         <PaperProvider theme={theme}>
+          <KeyboardAwareScrollView
+                     contentContainerStyle={{ flexGrow: 1 }}
+                     keyboardShouldPersistTaps="handled"
+                     style={{ flex: 1 ,backgroundColor:'#101218'}}
+                   >
             <SafeAreaView style={styles.container}>
                 
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
@@ -138,7 +145,10 @@ const ChangePassword = () => {
                  <View style={styles.separator} />
                  {newConPasswordError ? <Text style={styles.errorText}>{newConPasswordError}</Text> : <Text style={styles.noemailError}>{newConPasswordError}</Text>}
                 </View>
-                <TouchableOpacity onPress={handleChangePassword}>
+                <TouchableOpacity onPress={() => {
+                            Keyboard.dismiss();  // This will hide the keyboard
+                            handleChangePassword();     // Then call your sign-up logic
+                          }}>
                     <View style={styles.submitButton}>
                         <Text style={styles.submitButtonText}>Change Password</Text>
                     </View>
@@ -179,6 +189,7 @@ const ChangePassword = () => {
   </Modal>
 </Portal>
             </SafeAreaView>
+            </KeyboardAwareScrollView>
         </PaperProvider>
     );
 };

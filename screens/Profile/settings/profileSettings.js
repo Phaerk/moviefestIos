@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, Platform, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ActivityIndicator, Platform, SafeAreaView,Keyboard } from 'react-native';
 import auth from '@react-native-firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore';
@@ -10,7 +10,9 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-nat
 import { Dialog, Paragraph, Button, Portal, PaperProvider, MD2DarkTheme,Modal } from 'react-native-paper';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import LottieView from 'lottie-react-native';
-
+import { Auth } from '../../AuthScreens/services';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import profile from '../../../assets/profile_images/profile_.png';
 
 const theme = {
     ...MD2DarkTheme,
@@ -28,6 +30,7 @@ const theme = {
 const ProfileSettings = () => {
     const navigation = useNavigation();
     const [name, setName] = useState('');
+    const [newName,setNewName] = useState('');
     const [profileImageUrl, setProfileImageUrl] = useState('');
     const [loading, setLoading] = useState(true);
     const [isGoogleUser, setIsGoogleUser] = useState(false);
@@ -37,11 +40,17 @@ const ProfileSettings = () => {
     const [onConfirm, setOnConfirm] = useState(() => () => {});
     const [uploading, setUploading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
+    const [isAnon, setIsAnon] = useState(false);
+    const [anonModalVisible, setAnonModalVisible] = useState(false);
 
     const user = auth().currentUser;
+    const imageSource = profileImageUrl ? { uri: profileImageUrl } : profile;
 
     useEffect(() => {
         if (user) {
+            if (user.isAnonymous) {
+                setIsAnon(true);
+            }
             const userId = user.uid;
             const unsubscribe = firestore().collection('users').doc(userId).onSnapshot((docSnapshot) => {
                 if (docSnapshot.exists) {
@@ -58,22 +67,34 @@ const ProfileSettings = () => {
             return () => unsubscribe();
         }
     }, [user]);
-
+    const handleLogout = () => {
+        Auth.signOut();
+    };
     const handleSave = async () => {
+        if (isAnon) {
+            setAnonModalVisible(true);
+            return;
+        }
+
         try {
             const userRef = firestore().collection('users').doc(user.uid);
             await userRef.update({
-                name,
+                name: newName || name, // Eğer kullanıcı yeni bir isim girdiyse onu kaydet, yoksa eski ismi koru
                 profileImageUrl
             });
             setModalVisible(true);
         } catch (error) {
             console.error('Error updating profile:', error);
-            showAlert('Error', 'There was an error updating your profile.');
+        
         }
     };
 
     const handleSelectPhoto = () => {
+        if (isAnon) {
+            setAnonModalVisible(true);
+            return;
+        }
+
         launchImageLibrary({ mediaType: 'photo', quality: 0.7 }, async (response) => {
             if (response.didCancel) {
                 console.log('User cancelled image picker');
@@ -115,29 +136,46 @@ const ProfileSettings = () => {
 
     return (
         <PaperProvider theme={theme}>
+              <KeyboardAwareScrollView
+                                 contentContainerStyle={{ flexGrow: 1 }}
+                                 keyboardShouldPersistTaps="handled"
+                                 style={{ flex: 1 ,backgroundColor:'#101218'}}
+                               >
             <SafeAreaView style={styles.container}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <MaterialIcon name="arrow-back-ios" size={27} color="white" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{"Profile Settings"}</Text>
+               
                 <View style={styles.form}>
                     <Text style={styles.label}>{"Edit Name"}</Text>
                     <TextInput
-                        style={styles.input}
-                        value={name}
-                        onChangeText={setName}
-                        placeholder={"Enter your name"}
-                        placeholderTextColor="#888"
-                    />
+    style={styles.input}
+   
+    onChangeText={text => {
+        setNewName(text);
+       
+    }}
+    placeholder={"Enter name"}
+    placeholderTextColor="#888"
+/>
+
                     <Text style={styles.label}>{"Edit Profile Photo"}</Text>
 
-                    {profileImageUrl ? <Image source={{ uri: profileImageUrl }} style={styles.profilePhoto} /> : null}
+                    <Image source={imageSource} style={styles.profilePhoto} /> 
                     {uploading && <ActivityIndicator size="large" color="white" style={styles.loader} />}
+                    {name && <Text style={styles.currentName}>{name}</Text>}
                     <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.photoButton} onPress={handleSelectPhoto}>
+                        <TouchableOpacity style={styles.photoButton} onPress={() => {
+                            Keyboard.dismiss();  // This will hide the keyboard
+                            handleSelectPhoto();     // Then call your sign-up logic
+                          }}>
                             <Text style={styles.photoButtonText}>{"Select Photo"}</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={uploading}>
+                        <TouchableOpacity style={styles.saveButton} onPress={() => {
+                            Keyboard.dismiss();  // This will hide the keyboard
+                            handleSave();     // Then call your sign-up logic
+                          }} disabled={uploading}>
                             <Text style={styles.saveButtonText}>{"Save"}</Text>
                         </TouchableOpacity>
                     </View>
@@ -175,7 +213,50 @@ const ProfileSettings = () => {
                     </View>
                   </Modal>
                 </Portal>
+                <Portal>
+                    <Modal
+                        visible={anonModalVisible}
+                        onDismiss={() => setAnonModalVisible(false)}
+                        contentContainerStyle={modalStyles.modalContainer}
+                    >
+                        <View style={modalStyles.modalContent}>
+                            <LottieView
+                                source={require('../../../assets/animations/warn.json')}
+                                autoPlay
+                                loop={false}
+                                style={modalStyles.animation}
+                            />
+                            <Text style={modalStyles.modalTitle}>Need Sign-in</Text>
+                            <Text style={modalStyles.modalMessage}>
+                            As an anonymous user, you are unable to access personalized features. Please sign-in to unlock these features.
+                            </Text>
+                            <View style={modalStyles.buttonContainer}>
+                            <Button
+                                mode="contained"
+                                onPress={() => setAnonModalVisible(false)}
+                                style={modalStyles.resendButton}
+                                labelStyle={modalStyles.okButtonLabel}
+                            >
+                                BACK
+                            </Button>
+                            <Button
+                                mode="contained"
+                                onPress={() => {
+                                    handleLogout();
+                                    setAnonModalVisible(false); // Close modal after deletion
+                                    }}
+                                style={modalStyles.okButton}
+                                labelStyle={{ color: 'white' }}
+                                >
+                                    Sign in
+                            </Button>
+                            </View>
+                            
+                        </View>
+                    </Modal>
+                </Portal>
             </SafeAreaView>
+            </KeyboardAwareScrollView>
         </PaperProvider>
     );
 };
@@ -215,19 +296,39 @@ const modalStyles = StyleSheet.create({
       paddingHorizontal: 10,
     },
     okButton: {
-      backgroundColor: '#019159',
-      borderRadius: 8,
-      borderRadius: 10,
-      shadowColor: '#000',
-      shadowOpacity: 0.7,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 5, // Android için gölge
+        alignSelf: 'flex-end',
+        backgroundColor: '#019159',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.7,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 5, // Android için gölge
     },
     okButtonLabel: {
       color: 'white',
       fontWeight: 'bold',
       fontSize: 14,
+    },
+    resendButton: {
+        alignSelf: 'flex-start',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.7,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 5, // Android için gölge
+        backgroundColor:'#224060',
+    
+    },
+    modalContent: {
+        alignItems: 'center',
+        width: '100%',
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-between',
     },
   });
 
@@ -328,6 +429,17 @@ const styles = StyleSheet.create({
     loader: {
         marginBottom: 20,
     },
+    currentName: {
+        fontSize: 15, // Biraz daha büyük yaparak okunaklı hale getirildi
+        color: 'white', // Daha yumuşak bir gri tonu
+        fontWeight: '500', // Orta kalınlıkta font, daha dengeli görünüm sağlar
+        textAlign: 'center', // Yazının sola hizalanmasını sağlar
+        marginTop: -10,
+        marginBottom: 10,
+        fontWeight:'bold',
+        fontFamily:'Helvatica',
+            },
+            
 });
 
 export default ProfileSettings;

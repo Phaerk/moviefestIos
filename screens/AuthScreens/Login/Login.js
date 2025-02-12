@@ -38,9 +38,13 @@ const Login = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    setTimeout(() => {
-      animationRef.current.pause(); // Animasyonu durdur
-    }, 3800); // 2 saniye oynat, sonra durdur (isteğe bağlı süreyi değiştir)
+    const timeout = setTimeout(() => {
+      if (animationRef.current) {
+        animationRef.current.pause(); // Animasyonu durdur
+      }
+    }, 3800); // 3.8 saniye sonra animasyonu durdur
+  
+    return () => clearTimeout(timeout); // Sayfa değişirse setTimeout'u temizle
   }, []);
 
   useEffect(() => {
@@ -78,6 +82,28 @@ const Login = ({ navigation }) => {
     } catch (error) {
       console.error('Error sending verification email:', error);
       setShowAnimation(false); // Hide animation in case of an error
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    try {
+      const userCredential = await auth().signInAnonymously();
+      const user = userCredential.user;
+      await userCredential.user.reload();
+  
+      const userRef = firestore().collection('users').doc(user.uid);
+      const doc = await userRef.get();
+  
+      if (!doc.exists) {
+        await userRef.set({
+          name: user.displayName || 'Guest User',  // Varsayılan isim
+          email: user.email || 'anonymous@example.com',  // Varsayılan e-posta
+          profileImageUrl: user.photoURL || '',  // Profil resmi boş bırakılabilir
+        });
+      }
+      
+    } catch (error) {
+      console.error('Guest login failed:', error.message);
     }
   };
   const handleLogin = async () => {
@@ -270,6 +296,12 @@ const Login = ({ navigation }) => {
             </View>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity onPress={handleGuestLogin}>
+  <View style={styles.guestButton}>
+    <Text style={styles.guestButtonText}>Sign in as Guest</Text>
+  </View>
+</TouchableOpacity>
         
         <Portal>
             <Modal

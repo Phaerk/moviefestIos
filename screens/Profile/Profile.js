@@ -34,7 +34,8 @@ const ProfileScreen = () => {
     const [dialogMessage, setDialogMessage] = useState('');
     const [onConfirm, setOnConfirm] = useState(() => () => {});
     const [modalLogVisible, setModalLogVisible] = useState(false);
-   
+    const [isAnon, setIsAnon] = useState(false);
+    const [anonModalVisible, setAnonModalVisible] = useState(false);
    
 
     const user = auth().currentUser;
@@ -45,7 +46,9 @@ const ProfileScreen = () => {
 
     useEffect(() => {
         if (user) {
-           
+            if (user.isAnonymous) {
+                setIsAnon(true);
+            }
             fetchUserProfile();
             fetchFavoriteMovies(true);
             fetchWatchedMovies(true);
@@ -144,6 +147,10 @@ const ProfileScreen = () => {
     };
 
     const handleImagePicker = () => {
+        if (isAnon) {
+            setAnonModalVisible(true);
+            return;
+        }
         launchImageLibrary({ mediaType: 'photo', quality: 0.7 }, async (response) => {
             if (response.didCancel) {
                 console.log('User cancelled image picker');
@@ -314,6 +321,48 @@ const ProfileScreen = () => {
                              </View>
                            </Modal>
                          </Portal>
+                          <Portal>
+                                             <Modal
+                                                 visible={anonModalVisible}
+                                                 onDismiss={() => setAnonModalVisible(false)}
+                                                 contentContainerStyle={modalStyles.modalContainer}
+                                             >
+                                                 <View style={modalStyles.modalContent}>
+                                                     <LottieView
+                                                         source={require('../../assets/animations/warn.json')}
+                                                         autoPlay
+                                                         loop={false}
+                                                         style={modalStyles.animation2}
+                                                     />
+                                                     <Text style={modalStyles.modalTitle}>Need Sign-in</Text>
+                                                     <Text style={modalStyles.modalMessage}>
+                                                     As an anonymous user, you are unable to access personalized features. Please sign-in to unlock these features.
+                                                     </Text>
+                                                     <View style={modalStyles.buttonContainer}>
+                                                     <Button
+                                                         mode="contained"
+                                                         onPress={() => setAnonModalVisible(false)}
+                                                         style={modalStyles.resendButton}
+                                                         labelStyle={modalStyles.okButtonLabel}
+                                                     >
+                                                         BACK
+                                                     </Button>
+                                                      <Button
+                                                                                    mode="contained"
+                                                                                    onPress={() => {
+                                                                                       handleLogout();
+                                                                                       setAnonModalVisible(false); // Close modal after deletion
+                                                                                     }}
+                                                                                    style={modalStyles.okButton2}
+                                                                                    labelStyle={{ color: 'white' }}
+                                                                                  >
+                                                                                    Sign in
+                                                                                  </Button>
+                                                                                  </View>
+                                                     
+                                                 </View>
+                                             </Modal>
+                                         </Portal>
             <View height={10}></View>
         </ScrollView>
         </SafeAreaView>
@@ -393,6 +442,26 @@ const modalStyles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         elevation: 5, // Android için gölge
     },
+    okButton2: {
+        alignSelf: 'flex-end',
+        backgroundColor: '#019159',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.7,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 5, // Android için gölge
+    },
+    animation2: {
+        width: 120,
+        height: 120,
+        marginBottom: 16,
+      },
+      okButtonLabel: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+      },
   });
 const styles = StyleSheet.create({
     container: {

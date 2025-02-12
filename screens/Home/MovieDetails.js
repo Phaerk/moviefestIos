@@ -11,9 +11,9 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-nat
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
-
-
-
+import { Button, Portal ,Modal,PaperProvider,MD2DarkTheme} from 'react-native-paper';
+import LottieView from 'lottie-react-native';
+import { Auth } from '../AuthScreens/services';
 
 const API_KEY = 'f6de70a4a82aec4b70272b422861c7f1';
 const API_URL = 'https://api.themoviedb.org/3';
@@ -28,7 +28,8 @@ const MovieDetailsScreen = ({ route }) => {
     const [selectedActor, setSelectedActor] = useState(null);
     const [showFullBio, setShowFullBio] = useState(false);
     const scrollViewRef = useRef(null); 
- 
+    const [isAnon, setIsAnon] = useState(false);
+    const [anonModalVisible, setAnonModalVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     
@@ -60,6 +61,9 @@ const MovieDetailsScreen = ({ route }) => {
         fetchMovieDetails();
         fetchCast();
         if (user) {
+            if (user.isAnonymous) {
+                setIsAnon(true);
+            }
             checkFavoriteStatus();
             checkWatchedStatus();
         }
@@ -85,6 +89,9 @@ const MovieDetailsScreen = ({ route }) => {
 
   
 
+    const handleLogout = () => {
+        Auth.signOut();
+    };
 
     const fetchMovieDetails = async () => {
         try {
@@ -134,6 +141,10 @@ const MovieDetailsScreen = ({ route }) => {
     };
 
     const toggleFavorite = async () => {
+        if (isAnon) {
+            setAnonModalVisible(true);
+            return;
+        }
         try {
             const userDoc = firestore().collection('users').doc(user.uid);
             const movieDoc = userDoc.collection('favorites').doc(movieId.toString());
@@ -151,6 +162,10 @@ const MovieDetailsScreen = ({ route }) => {
     };
 
     const toggleWatched = async () => {
+        if (isAnon) {
+            setAnonModalVisible(true);
+            return;
+        }
         try {
             const userDoc = firestore().collection('users').doc(user.uid);
             const movieDoc = userDoc.collection('watched').doc(movieId.toString());
@@ -231,6 +246,7 @@ const MovieDetailsScreen = ({ route }) => {
     const releaseYear = movieDetails.release_date.substring(0, 4);
     if (!isLoading) {
     return (
+        <PaperProvider theme={theme}>
         <SafeAreaView style={styles.container}>
         <ScrollView contentInsetAdjustmentBehavior="automatic" ref={scrollViewRef} style={styles.container}>
         
@@ -355,14 +371,140 @@ const MovieDetailsScreen = ({ route }) => {
                             <Text style={styles.actorName}>{actor.name}</Text>
                         </TouchableOpacity>
                     ))}
+                    
                 </ScrollView>
             </View>
+            
         </ScrollView>
+        <Portal>
+                <Modal
+                    visible={anonModalVisible}
+                    onDismiss={() => setAnonModalVisible(false)}
+                    contentContainerStyle={modalStyles.modalContainer}
+                    >
+                    <View style={modalStyles.modalContent}>
+                        <LottieView
+                            source={require('../../assets/animations/warn.json')}
+                            autoPlay
+                            loop={false}
+                            style={modalStyles.animation}
+                        />
+                            <Text style={modalStyles.modalTitle}>Need Sign-in</Text>
+                            <Text style={modalStyles.modalMessage}>
+                            As an anonymous user, you are unable to access personalized features. Please sign-in to unlock these features.
+                            </Text>
+                                <View style={modalStyles.buttonContainer}>
+                                    <Button
+                                        mode="contained"
+                                        onPress={() => setAnonModalVisible(false)}
+                                        style={modalStyles.resendButton}
+                                        labelStyle={modalStyles.okButtonLabel}
+                                    >
+                                        BACK
+                                    </Button>
+                                    <Button
+                                        mode="contained"
+                                        onPress={() => {
+                                            handleLogout();
+                                            setAnonModalVisible(false); // Close modal after deletion
+                                            }}
+                                        style={modalStyles.okButton}
+                                        labelStyle={{ color: 'white' }}
+                                        >
+                                            Sign in
+                                    </Button>
+                                </View>
+                                    
+                    </View>
+                </Modal>
+            </Portal>
         </SafeAreaView>
+        </PaperProvider>
+        
     );
     
 };
 }
+
+const theme = {
+    ...MD2DarkTheme,
+    colors: {
+        ...MD2DarkTheme.colors,
+        surface: 'black', // Arka plan rengi
+        primary: 'white', // Ana buton rengi
+        accent: '#d9534f', // Vurgulayıcı renk
+        text: '#fff', // Metin rengi
+        onSurface: 'white', // Üzerinde metin rengi
+        backdrop: 'rgba(0, 0, 0, 0.5)', // Arka plan opaklık rengi
+    },
+};
+const modalStyles = StyleSheet.create({
+    modalContainer: {
+        backgroundColor: '#222831',
+        padding: 20, 
+        margin: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.5,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+
+      modalContent: {
+        alignItems: 'center',
+        width: '100%',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 10,
+    },
+    modalMessage: {
+        fontSize: 14,
+        color: '#d3d3d3',
+        textAlign: 'center',
+        marginBottom: 30,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-between',
+    },
+    resendButton: {
+        alignSelf: 'flex-start',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.7,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 5, // Android için gölge
+        backgroundColor:'#224060',
+    
+    },
+
+    okButton: {
+        alignSelf: 'flex-end',
+        backgroundColor: '#019159',
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.7,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 5, // Android için gölge
+    },
+    animation: {
+        width: 120,
+        height: 120,
+        marginBottom: 16,
+      },
+      okButtonLabel: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
+      },
+  });
 
 const styles = StyleSheet.create({
     picker: {

@@ -13,29 +13,32 @@ const AppContainer = () => {
     async function onAuthStateChange(user) {
         if (user) {
             await user.reload(); // Update user info
-            // Skip emailVerified check for Google/Apple logins
-            if (user.providerData && (user.providerData[0].providerId === 'google.com' || user.providerData[0].providerId === 'apple.com')) {
-                setUser(user); // If logged in with Google/Apple, set user without email verification check
+    
+            if (user.isAnonymous) {
+                setUser(user); // Anonim kullanıcıyı kabul et
+                setIntervalCleared(true); // Interval'i temizle
+            } else if (user.providerData && (user.providerData[0].providerId === 'google.com' || user.providerData[0].providerId === 'apple.com')) {
+                setUser(user); // Google/Apple girişini kabul et
                 if (!intervalCleared) {
-                    setIntervalCleared(true); // Stop checking email verification
+                    setIntervalCleared(true);
                 }
             } else {
                 if (user.emailVerified) {
-                    setUser(user); // Only set the user if email is verified
+                    setUser(user); // Yalnızca email doğrulanmışsa kullanıcıyı kabul et
                     if (!intervalCleared) {
-                        setIntervalCleared(true); // Stop checking email verification
+                        setIntervalCleared(true);
                     }
                 } else {
-                    setUser(null); // Otherwise, set user as null
+                    setUser(null); // Email doğrulanmadıysa kullanıcıyı null yap
                     if (intervalCleared) {
-                        setIntervalCleared(false); // Reset interval check when user logs out
+                        setIntervalCleared(false);
                     }
                 }
             }
         } else {
-            setUser(null); // If no user is logged in
+            setUser(null); // Kullanıcı çıkış yaptıysa
             if (intervalCleared) {
-                setIntervalCleared(false); // Reset interval check when user logs out
+                setIntervalCleared(false);
             }
         }
         if (initializing) setInitializing(false);

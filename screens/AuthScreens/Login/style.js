@@ -196,6 +196,20 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
+  guestButton: {
+    marginTop: 20,
+   
+    backgroundColor: '#101218', // Daha soft bir renk olabilir
+  
+    alignItems: 'center',
+  },
+  guestButtonText: {
+    marginTop: hp('4%'),
+    marginBottom: hp('2.5%'),
+    fontSize: wp('4%'),
+    color: 'grey',
+    textDecorationLine: 'underline',
+  },
   });
 
   

@@ -20,6 +20,7 @@ const SettingsScreen = () => {
     const navigation = useNavigation();
     const [isGoogleUser, setIsGoogleUser] = useState(false);
     const [isAppleUser, setIsAppleUser] = useState(false);
+    const [isAnon, setIsAnon] = useState(false);
 
     const [modalVisible, setModalVisible] = useState(false);
     const [modalReqVisible, setModalReqVisible] = useState(false);
@@ -30,14 +31,29 @@ const SettingsScreen = () => {
     useEffect(() => {
        
         const user = auth().currentUser;
-        if (user && user.providerData[0].providerId === 'google.com') {
-            setIsGoogleUser(true);
-        }else if (user && user.providerData[0].providerId === 'apple.com') {
-            setIsAppleUser(true);
-        }else{
-            setIsAppleUser(false);
-            setIsGoogleUser(false);
-        }
+        if (user) {
+          if (user.isAnonymous) {
+              setIsGoogleUser(false);
+              setIsAppleUser(false);
+              setIsAnon(true);
+          } else if (user.providerData[0].providerId === 'google.com') {
+              setIsGoogleUser(true);
+              setIsAppleUser(false);
+              setIsAnon(false);
+          } else if (user.providerData[0].providerId === 'apple.com') {
+              setIsAppleUser(true);
+              setIsGoogleUser(false);
+              setIsAnon(false);
+          } else {
+              setIsGoogleUser(false);
+              setIsAppleUser(false);
+              setIsAnon(false);
+          }
+      } else {
+          setIsGoogleUser(false);
+          setIsAppleUser(false);
+          setIsAnon(false);
+      }
 
         
     }, []);
@@ -106,7 +122,7 @@ const SettingsScreen = () => {
                 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>{"Account"}</Text>
-                    {!(isGoogleUser || isAppleUser) && (
+                    {!(isGoogleUser || isAppleUser ||isAnon) && (
                         <>
                             <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('ChangePassword')}>
                             <MaterialCommunityIcon name="account-key" size={24} color="white" />
